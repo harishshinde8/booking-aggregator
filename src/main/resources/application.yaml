@@ -1,0 +1,13 @@
+server:
+  port: 8889
+spring:
+  application:
+    name: booking
+  data:
+    mongodb:
+      uri: ${SPRING_DATA_MONGODB_URI:mongodb://localhost:27017/pnrDB}
+springdoc:
+  api-docs:
+    path: /swagger-ui.html
+  swagger-ui:
+    path: /v3/api-docs

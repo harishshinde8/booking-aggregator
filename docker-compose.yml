@@ -1,0 +1,36 @@
+version: "3.9"
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: pnr-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: pnrDB
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - booking-net
+
+  booking:
+    build: .
+    container_name: booking
+    depends_on:
+      - mongodb
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/pnrDB
+      SERVER_PORT: 8888
+      VERTX_WS_PORT: 9999
+    ports:
+      - "8888:8888" # Spring Boot REST API
+      - "9999:9999" # Vert.x WebSocket
+    networks:
+      - booking-net
+
+networks:
+  booking-net:
+    driver: bridge
+
+volumes:
+  mongo_data:
