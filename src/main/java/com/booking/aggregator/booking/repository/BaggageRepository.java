@@ -8,4 +8,5 @@ import reactor.core.publisher.Mono;
 @Repository
 public interface BaggageRepository extends ReactiveMongoRepository<Baggage, String> {
     Mono<Baggage> findByPnrAndPassengerNumber(String pnr, Integer passengerNumber);
+    Mono<Baggage> findByPassengerNumber(Integer passengerNumber);
 }

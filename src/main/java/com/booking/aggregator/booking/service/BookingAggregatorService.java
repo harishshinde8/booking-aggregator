@@ -7,6 +7,7 @@ import com.booking.aggregator.booking.repository.*;
 import io.vertx.core.Vertx;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -60,38 +61,47 @@ public class BookingAggregatorService {
      */
     private Flux<PassengerResponseDTO> mapPassengers(Trip trip) {
         return passengerRepo.findByPnr(trip.getPnr())
-                .flatMap(passenger -> Mono.zip(
-                        fetchBaggage(passenger),
-                        fetchETicket(passenger)
-                ).map(tuple -> mapPassengerToDto(passenger, tuple.getT1(), tuple.getT2())));
+                .flatMap(passenger ->
+                        Mono.zip(
+                                fetchBaggage(passenger)
+                                        .defaultIfEmpty(new Baggage()), // default object if missing
+                                fetchETicket(passenger)
+                                        .defaultIfEmpty(new ETicket()) // no ticket
+                        ).map(tuple -> mapPassengerToDto(passenger, tuple.getT1(), tuple.getT2()))
+                );
+
     }
 
     /**
      * Convert Passenger + Baggage + Ticket -> PassengerResponseDTO
      */
     private PassengerResponseDTO mapPassengerToDto(Passenger passenger, Baggage baggage, ETicket ticket) {
-        return PassengerResponseDTO.builder()
+        PassengerResponseDTO passengerResponseDTO = PassengerResponseDTO.builder()
                 .passengerNumber(passenger.getPassengerNumber())
                 .customerId(passenger.getCustomerId())
                 .fullName(Stream.of(passenger.getFirstName(), passenger.getMiddleName(), passenger.getLastName())
                         .filter(Objects::nonNull)
                         .collect(Collectors.joining(" ")))
-                .seat(passenger.getSeat())
-                .ticketUrl(ticket != null ? ticket.getTicketUrl() : null)
-                .baggageAllowance(baggage != null ? BaggageAllowanceResponseDTO.builder()
-                        .passengerNumber(baggage.getPassengerNumber())
-                        .allowanceUnit(baggage.getAllowanceUnit())
-                        .checkedAllowanceValue(baggage.getCheckedAllowanceValue())
-                        .carryOnAllowanceValue(baggage.getCarryOnAllowanceValue())
-                        .build() : null)
-                .build();
+                .seat(passenger.getSeat()).build();
+        if (Objects.nonNull(baggage) && StringUtils.isNotBlank(baggage.getId())) {
+            passengerResponseDTO.setBaggageAllowance(BaggageAllowanceResponseDTO.builder()
+                                .passengerNumber(baggage.getPassengerNumber())
+                                .allowanceUnit(baggage.getAllowanceUnit())
+                                .checkedAllowanceValue(baggage.getCheckedAllowanceValue())
+                                .carryOnAllowanceValue(baggage.getCarryOnAllowanceValue())
+                                .build());
+        }
+        if (Objects.nonNull(ticket) && StringUtils.isNotBlank(ticket.getId())) {
+            passengerResponseDTO.setTicketUrl(ticket.getTicketUrl());
+        }
+        return passengerResponseDTO;
     }
 
     /**
      * Fetch baggage allowance for a passenger
      */
     private Mono<Baggage> fetchBaggage(Passenger passenger) {
-        return baggageRepo.findByPnrAndPassengerNumber(passenger.getPnr(), passenger.getPassengerNumber())
+        return baggageRepo.findByPassengerNumber(passenger.getPassengerNumber())
                 .switchIfEmpty(Mono.empty())
                 .doOnError(err -> log.warn("BookingAggregatorService | Failed to fetch baggage for passenger {}: {}", passenger.getPassengerNumber(), err.getMessage()));
     }
