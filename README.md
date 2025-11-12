@@ -66,32 +66,49 @@ Create Booking PNR
 * Request Body:
 ```json
 {
-  "pnr": "ABCDEFG",
-  "cabinClass": "Economy",
-  "flights": [
-    {
-      "flightNumber": "AI101",
-      "departureAirport": "DEL",
-      "departureTimeStamp": "2025-11-15T08:00:00",
-      "arrivalAirport": "DXB",
-      "arrivalTimeStamp": "2025-11-15T11:30:00"
-    }
-  ],
-  "passengers": [
-    {
-      "passengerNumber": 1,
-      "firstName": "John",
-      "middleName": "K",
-      "lastName": "Doe",
-      "seat": "12A",
-      "baggageAllowance": {
-        "allowanceUnit": "KG",
-        "checkedAllowanceValue": 20,
-        "carryOnAllowanceValue": 7
+   "cabinClass": "ECONOMY",
+   "passengers": [
+      {
+         "passengerNumber": 1,
+         "customerId": "1218",
+         "fullName": "James Morgan McGill",
+         "seat": "32D",
+         "ticketUrl": null,
+         "baggageAllowance": {
+            "allowanceUnit": "kg",
+            "checkedAllowanceValue": 25,
+            "carryOnAllowanceValue": 7
+         }
       },
-      "ticketUrl": "https://example.com/ticket.pdf"
-    }
-  ]
+      {
+         "passengerNumber": 2,
+         "customerId": "1219",
+         "fullName": "Charles McGill",
+         "seat": "31D",
+         "ticketUrl": "emirates.com?ticket=someTicketRef",
+         "baggageAllowance": {
+            "allowanceUnit": "kg",
+            "checkedAllowanceValue": 25,
+            "carryOnAllowanceValue": 7
+         }
+      }
+   ],
+   "flights": [
+      {
+         "flightNumber": "EK231",
+         "departureAirport": "DXB",
+         "departureTimeStamp": "2025-11-11T02:25:00+00:00",
+         "arrivalAirport": "IAD",
+         "arrivalTimeStamp": "2025-11-11T08:10:00+00:00"
+      },
+      {
+         "flightNumber": "EK123",
+         "departureAirport": "IAD",
+         "departureTimeStamp": "2025-11-11T02:25:00+00:00",
+         "arrivalAirport": "DXB",
+         "arrivalTimeStamp": "2025-11-11T08:10:00+00:00"
+      }
+   ]
 }
 ```
 Get Booking by PNR
