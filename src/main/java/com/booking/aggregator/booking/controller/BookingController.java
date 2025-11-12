@@ -50,6 +50,6 @@ public class BookingController {
     })
     public Mono<String> createBooking(@RequestBody CreateBookingRequest request) {
         log.info("Creating booking for request: {}", request);
-        return bookingCreatorService.createBooking(request).flatMap(trip -> Mono.just("Booking has been created successfully with PNR"+trip.getPnr()));
+        return bookingCreatorService.createBooking(request).flatMap(trip -> Mono.just("Booking has been created successfully with PNR : "+trip.getPnr()));
     }
 }

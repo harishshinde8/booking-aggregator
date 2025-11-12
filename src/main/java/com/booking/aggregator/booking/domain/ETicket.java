@@ -13,7 +13,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class ETicket {
     @Id
     private String id; // auto-generated
-    private String pnr;
     private int passengerNumber;
     private String ticketUrl;
 }

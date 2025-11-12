@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -15,5 +17,5 @@ public class PassengerResponseDTO {
     private String fullName;
     private String seat;
     private String ticketUrl;
-    private BaggageAllowanceResponseDTO baggageAllowance;
+    private List<BaggageAllowanceResponseDTO> baggageAllowance;
 }

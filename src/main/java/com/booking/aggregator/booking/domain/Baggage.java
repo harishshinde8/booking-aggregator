@@ -14,7 +14,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class Baggage {
     @Id
     private String id; // auto-generated
-    private String pnr;
     private int passengerNumber;
     private String allowanceUnit;
     private int checkedAllowanceValue;

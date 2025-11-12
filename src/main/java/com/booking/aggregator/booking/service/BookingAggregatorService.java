@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -63,8 +64,7 @@ public class BookingAggregatorService {
         return passengerRepo.findByPnr(trip.getPnr())
                 .flatMap(passenger ->
                         Mono.zip(
-                                fetchBaggage(passenger)
-                                        .defaultIfEmpty(new Baggage()), // default object if missing
+                                fetchBaggage(passenger), // default object if missing
                                 fetchETicket(passenger)
                                         .defaultIfEmpty(new ETicket()) // no ticket
                         ).map(tuple -> mapPassengerToDto(passenger, tuple.getT1(), tuple.getT2()))
@@ -75,7 +75,7 @@ public class BookingAggregatorService {
     /**
      * Convert Passenger + Baggage + Ticket -> PassengerResponseDTO
      */
-    private PassengerResponseDTO mapPassengerToDto(Passenger passenger, Baggage baggage, ETicket ticket) {
+    private PassengerResponseDTO mapPassengerToDto(Passenger passenger, List<Baggage> baggage, ETicket ticket) {
         PassengerResponseDTO passengerResponseDTO = PassengerResponseDTO.builder()
                 .passengerNumber(passenger.getPassengerNumber())
                 .customerId(passenger.getCustomerId())
@@ -83,14 +83,15 @@ public class BookingAggregatorService {
                         .filter(Objects::nonNull)
                         .collect(Collectors.joining(" ")))
                 .seat(passenger.getSeat()).build();
-        if (Objects.nonNull(baggage) && StringUtils.isNotBlank(baggage.getId())) {
-            passengerResponseDTO.setBaggageAllowance(BaggageAllowanceResponseDTO.builder()
-                                .passengerNumber(baggage.getPassengerNumber())
-                                .allowanceUnit(baggage.getAllowanceUnit())
-                                .checkedAllowanceValue(baggage.getCheckedAllowanceValue())
-                                .carryOnAllowanceValue(baggage.getCarryOnAllowanceValue())
-                                .build());
+
+        if (Objects.nonNull(baggage) && !CollectionUtils.isEmpty(baggage)) {
+            passengerResponseDTO.setBaggageAllowance(baggage.stream().map(bag-> BaggageAllowanceResponseDTO.builder()
+                                .allowanceUnit(bag.getAllowanceUnit())
+                                .checkedAllowanceValue(bag.getCheckedAllowanceValue())
+                                .carryOnAllowanceValue(bag.getCarryOnAllowanceValue())
+                                .build()).toList());
         }
+
         if (Objects.nonNull(ticket) && StringUtils.isNotBlank(ticket.getId())) {
             passengerResponseDTO.setTicketUrl(ticket.getTicketUrl());
         }
@@ -100,9 +101,9 @@ public class BookingAggregatorService {
     /**
      * Fetch baggage allowance for a passenger
      */
-    private Mono<Baggage> fetchBaggage(Passenger passenger) {
+    private Mono<List<Baggage>> fetchBaggage(Passenger passenger) {
         return baggageRepo.findByPassengerNumber(passenger.getPassengerNumber())
-                .switchIfEmpty(Mono.empty())
+                .collect(Collectors.toList())
                 .doOnError(err -> log.warn("BookingAggregatorService | Failed to fetch baggage for passenger {}: {}", passenger.getPassengerNumber(), err.getMessage()));
     }
 
@@ -110,7 +111,7 @@ public class BookingAggregatorService {
      * Fetch e-ticket for a passenger
      */
     private Mono<ETicket> fetchETicket(Passenger passenger) {
-        return eTicketRepo.findByPnrAndPassengerNumber(passenger.getPnr(), passenger.getPassengerNumber())
+        return eTicketRepo.findByPassengerNumber(passenger.getPassengerNumber())
                 .switchIfEmpty(Mono.empty())
                 .doOnError(err -> log.warn("BookingAggregatorService | Failed to fetch ticket for passenger {}: {}", passenger.getPassengerNumber(), err.getMessage()));
     }

@@ -1,4 +1,4 @@
-package com.booking.aggregator.booking.config;
+package com.booking.aggregator.booking.vertx.initializer;
 
 import com.booking.aggregator.booking.vertx.verticle.PnrWebSocketVerticle;
 import io.vertx.core.Vertx;

@@ -7,5 +7,5 @@ import reactor.core.publisher.Mono;
 
 @Repository
 public interface ETicketRepository extends ReactiveMongoRepository<ETicket, String> {
-    Mono<ETicket> findByPnrAndPassengerNumber(String pnr, int passengerNumber);
+    Mono<ETicket> findByPassengerNumber(int passengerNumber);
 }

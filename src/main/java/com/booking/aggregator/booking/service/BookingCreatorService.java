@@ -11,13 +11,13 @@ import reactor.core.publisher.Mono;
 import java.security.SecureRandom;
 
 import static com.booking.aggregator.booking.constants.BookingConstants.ALPHANUMERIC;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class BookingCreatorService {
 
     private static final SecureRandom RANDOM = new SecureRandom();
+
     private final TripRepository tripRepo;
     private final PassengerRepository passengerRepo;
     private final BaggageRepository baggageRepo;
@@ -25,55 +25,71 @@ public class BookingCreatorService {
 
     public Mono<Trip> createBooking(CreateBookingRequest request) {
         String pnr = generatePnr(7);
+
+        // Build Trip object
         Trip trip = new Trip();
+        trip.setId(null);
         trip.setPnr(pnr);
         trip.setCabinClass(request.getCabinClass());
-        trip.setFlights(request.getFlights().stream().map(f ->
-                        new Trip.Flight(f.getFlightNumber(), f.getDepartureAirport(),
-                                f.getDepartureTimeStamp(), f.getArrivalAirport(),
-                                f.getArrivalTimeStamp()))
+        trip.setFlights(request.getFlights().stream()
+                .map(f -> new Trip.Flight(
+                        f.getFlightNumber(),
+                        f.getDepartureAirport(),
+                        f.getDepartureTimeStamp(),
+                        f.getArrivalAirport(),
+                        f.getArrivalTimeStamp()))
                 .toList());
 
-        Mono<Trip> savedTrip = tripRepo.save(trip);
+        // Save Trip first
+        return tripRepo.save(trip)
+                .flatMap(savedTrip ->
+                        Flux.fromIterable(request.getPassengers())
+                                .flatMap(p -> savePassengerData(p, pnr)) // handle each passenger
+                                .then(Mono.just(savedTrip)) // when all passengers done
+                );
+    }
 
-        Flux<Passenger> passengers = Flux.fromIterable(request.getPassengers())
-                .flatMap(p -> {
-                    Passenger passenger = new Passenger();
-                    passenger.setPnr(request.getPnr());
-                    passenger.setPassengerNumber(p.getPassengerNumber());
-                    passenger.setFirstName(p.getFirstName());
-                    passenger.setMiddleName(p.getMiddleName());
-                    passenger.setLastName(p.getLastName());
-                    passenger.setCustomerId(p.getCustomerId());
-                    passenger.setSeat(p.getSeat());
+    private Mono<Passenger> savePassengerData(CreatePassengerRequest p, String pnr) {
+        Passenger passenger = new Passenger();
+        passenger.setId(null);
+        passenger.setPnr(pnr);
+        passenger.setPassengerNumber(p.getPassengerNumber());
+        passenger.setFirstName(p.getFirstName());
+        passenger.setMiddleName(p.getMiddleName());
+        passenger.setLastName(p.getLastName());
+        passenger.setCustomerId(p.getCustomerId());
+        passenger.setSeat(p.getSeat());
 
-                    Mono<Passenger> savedPassenger = passengerRepo.save(passenger);
+        // Save passenger
+        Mono<Passenger> savedPassengerMono = passengerRepo.save(passenger).cache();
 
-                    Mono<Baggage> savedBaggage = Mono.empty();
-                    if (p.getBaggageAllowance() != null) {
-                        Baggage b = new Baggage();
-                        b.setPnr(request.getPnr());
-                        b.setPassengerNumber(p.getPassengerNumber());
-                        b.setAllowanceUnit(p.getBaggageAllowance().getAllowanceUnit());
-                        b.setCheckedAllowanceValue(p.getBaggageAllowance().getCheckedAllowanceValue());
-                        b.setCarryOnAllowanceValue(p.getBaggageAllowance().getCarryOnAllowanceValue());
-                        savedBaggage = baggageRepo.save(b);
-                    }
+        // Save all baggage items if present
+        Mono<Baggage> savedBaggageMono = Mono.empty();
+        if (p.getBaggageAllowance() != null) {
+            savedBaggageMono = Mono.just(p.getBaggageAllowance()).flatMap(bag -> {
+                Baggage b = new Baggage();
+                b.setId(null);
+                b.setPassengerNumber(p.getPassengerNumber());
+                b.setAllowanceUnit(bag.getAllowanceUnit());
+                b.setCheckedAllowanceValue(bag.getCheckedAllowanceValue());
+                b.setCarryOnAllowanceValue(bag.getCarryOnAllowanceValue());
+                return baggageRepo.save(b);
+            });
+        }
 
-                    Mono<ETicket> savedTicket = Mono.empty();
-                    if (p.getTicketUrl() != null) {
-                        ETicket t = new ETicket();
-                        t.setPnr(request.getPnr());
-                        t.setPassengerNumber(p.getPassengerNumber());
-                        t.setTicketUrl(p.getTicketUrl());
-                        savedTicket = eTicketRepo.save(t);
-                    }
+        // Save ticket if present
+        Mono<ETicket> savedTicketMono = Mono.empty();
+        if (p.getTicketUrl() != null) {
+            ETicket t = new ETicket();
+            t.setId(null);
+            t.setPassengerNumber(p.getPassengerNumber());
+            t.setTicketUrl(p.getTicketUrl());
+            savedTicketMono = eTicketRepo.save(t);
+        }
 
-                    return Mono.when(savedPassenger, savedBaggage, savedTicket)
-                            .thenReturn(passenger);
-                });
-
-        return savedTrip.flatMap(trip1 -> passengers.collectList().thenReturn(trip1));
+        // Combine passenger + all other saves (without blocking)
+        return Mono.when(savedPassengerMono, savedBaggageMono, savedTicketMono.defaultIfEmpty(new ETicket()))
+                .then(savedPassengerMono);
     }
 
     public static String generatePnr(int length) {
@@ -83,5 +99,4 @@ public class BookingCreatorService {
         }
         return sb.toString();
     }
-
 }
