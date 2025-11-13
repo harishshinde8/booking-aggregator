@@ -6,8 +6,9 @@ spring:
   data:
     mongodb:
       uri: ${SPRING_DATA_MONGODB_URI:mongodb://localhost:27017/pnrDB}
+
 springdoc:
   api-docs:
-    path: /swagger-ui.html
+    path: /v3/api-docs    # default; change only if you need
   swagger-ui:
-    path: /v3/api-docs
+    path: /swagger-ui     # final UI will be at /swagger-ui/index.html
