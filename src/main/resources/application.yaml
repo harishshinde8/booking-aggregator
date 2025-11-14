@@ -1,11 +1,11 @@
 server:
-  port: 8889
+  port: 8888
 spring:
   application:
     name: booking
   data:
     mongodb:
-      uri: ${SPRING_DATA_MONGODB_URI:mongodb://localhost:27017/pnrDB}
+      uri: mongodb://localhost:27017/pnrDB?retryWrites=false
 
 springdoc:
   api-docs:

@@ -39,13 +39,12 @@ A Spring Boot + Vert.x reactive backend service for aggregating booking informat
        mongodb:
          uri: mongodb://localhost:27017/pnrDB
    server:
-    port: 8889
+    port: 8888
 3. Build and run:
    ```bash
-   ./mvnw clean package
-    java -jar target/booking-aggregator-0.0.1-SNAPSHOT.jar
-4. Swagger UI: http://localhost:8889/swagger-ui.html
-   REST API base URL: http://localhost:8889
+   mvn clean spring-boot:run
+4. Swagger UI: http://localhost:8888/swagger-ui/index.html
+   REST API base URL: http://localhost:8888
 
 Using Docker
 1. Build the Docker image:

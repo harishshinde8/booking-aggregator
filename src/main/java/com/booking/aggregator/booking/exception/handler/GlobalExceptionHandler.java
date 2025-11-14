@@ -47,7 +47,7 @@ public class GlobalExceptionHandler {
 
 
     @ExceptionHandler(MethodNotAllowedException.class)
-    public ResponseEntity<ErrorResponse> handleMethodNotAllowed(MethodNotAllowedException ex, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<ErrorResponse>> handleMethodNotAllowed(MethodNotAllowedException ex, ServerWebExchange exchange) {
         log.warn("MethodNotAllowedException: {}", ex.getMessage());
         ErrorResponse error = ErrorResponse.builder()
                 .status(HttpStatus.METHOD_NOT_ALLOWED.value())
@@ -56,11 +56,11 @@ public class GlobalExceptionHandler {
                 .path(exchange.getRequest().getPath().value())
                 .timestamp(Instant.now())
                 .build();
-        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(error);
+        return Mono.just(ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(error));
     }
 
     @ExceptionHandler(ServerWebInputException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidInput(ServerWebInputException ex, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<ErrorResponse>> handleInvalidInput(ServerWebInputException ex, ServerWebExchange exchange) {
         log.warn("Invalid input: {}", ex.getMessage());
         ErrorResponse error = ErrorResponse.builder()
                 .status(HttpStatus.BAD_REQUEST.value())
@@ -69,12 +69,12 @@ public class GlobalExceptionHandler {
                 .path(exchange.getRequest().getPath().value())
                 .timestamp(Instant.now())
                 .build();
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error));
     }
 
     // Catch-all
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGenericException(Exception ex, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<ErrorResponse>> handleGenericException(Exception ex, ServerWebExchange exchange) {
         log.error("Unexpected error: {}", ex.getMessage());
         ErrorResponse error = ErrorResponse.builder()
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
@@ -83,6 +83,6 @@ public class GlobalExceptionHandler {
                 .path(exchange.getRequest().getPath().value())
                 .timestamp(Instant.now())
                 .build();
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error));
     }
 }

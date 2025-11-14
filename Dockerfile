@@ -1,19 +1,16 @@
-# Start from a lightweight Java 21 base image
-FROM eclipse-temurin:21-jdk-jammy
-
-# Set working directory
+# Build stage
+FROM maven:3.9.11-eclipse-temurin-21 AS build
 WORKDIR /app
+COPY pom.xml .
+COPY src ./src
+RUN mvn clean package -DskipTests
 
-# Copy the JAR file from target folder
-COPY target/*.jar app.jar
-
-# Expose ports
+# Runtime stage
+FROM eclipse-temurin:21-jdk-jammy
+WORKDIR /app
+COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8888
 EXPOSE 9999
-
-# Environment variables
 ENV JAVA_OPTS=""
 ENV SPRING_PROFILES_ACTIVE=default
-
-# Run the Spring Boot app
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

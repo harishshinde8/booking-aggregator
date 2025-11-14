@@ -1,6 +1,7 @@
 package com.booking.aggregator.booking.domain;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
@@ -12,6 +13,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Trip {
     @Id
     private String id; // auto-generated
@@ -22,6 +24,7 @@ public class Trip {
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
+    @Builder
     public static class Flight {
         private String flightNumber;
         private String departureAirport;
